@@ -36,7 +36,7 @@ QUESTIONS = load_data()
 # --- 2. API設定 ---
 if "api_key" in st.secrets:
     genai.configure(api_key=st.secrets["api_key"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 else:
     st.error("APIキーをSecretsに設定してください。")
 
