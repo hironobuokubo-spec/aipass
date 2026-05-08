@@ -68,9 +68,10 @@ with tab_home:
             try:
                 res = model.generate_content("生成AIパスポート試験向けの重要語句を1つ選び、キーワードと3行解説を書いて。")
                 st.session_state.daily_topic = res.text
-            except:
-                st.session_state.daily_topic = "AIが混雑しています。リロードしてください。"
-    st.info(st.session_state.daily_topic)
+            except Exception as e:
+                # ここを書き換えて、エラーの正体を表示させる
+                st.error(f"AI通信エラーが発生しました: {e}")
+                st.session_state.daily_topic = "AIの読み込みに失敗しました。"
     if st.button("🔄 別のトピックを生成"):
         del st.session_state.daily_topic
         st.rerun()
