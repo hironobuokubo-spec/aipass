@@ -1,1 +1,44 @@
-
+{
+  "questions": [
+    {
+      "id": "Q1",
+      "category": "ガバナンス・法令",
+      "difficulty": "standard",
+      "question": "2025年6月に交付された「AI新法」における、事業者の主な義務は次のうちどれか？",
+      "choices": [
+        "AIの完全な利用停止義務",
+        "特定のリスクに対する協力義務と透明性の確保",
+        "すべてのAI生成物への課税",
+        "AI開発の事前許可制"
+      ],
+      "correct": 1,
+      "explanation": "AI新法は、推進とリスク対応の両立を図るもので、事業者に重大なリスクへの対応協力や透明性の確保を求めています。"
+    },
+    {
+      "id": "Q2",
+      "category": "活用技術",
+      "difficulty": "basic",
+      "question": "ハルシネーションを抑制するために、外部の信頼できる情報を検索して回答を生成する仕組みを何と呼ぶか？",
+      "choices": [
+        "RLHF",
+        "GAN",
+        "RAG",
+        "Fine-tuning"
+      ],
+      "correct": 2,
+      "explanation": "RAG (Retrieval-Augmented Generation) は検索拡張生成と呼ばれ、外部知識を回答に組み込む手法です。"
+    }
+  ],
+  "topics": [
+    {
+      "id": "T1",
+      "title": "AIエージェントとMCP",
+      "content": "AIエージェントが自律的に外部ツールを動かす際、安全かつ標準的な手順で接続するためのプロトコルが「MCP (Model Context Protocol)」です。今後のAI連携の鍵となります。"
+    },
+    {
+      "id": "T2",
+      "title": "プロンプトインジェクション",
+      "content": "悪意のある指示を入力し、AIに開発者が意図しない動作（機密情報の漏洩など）をさせる攻撃手法です。システム側の防御策が必須となります。"
+    }
+  ]
+}
