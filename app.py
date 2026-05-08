@@ -3,81 +3,112 @@ import random
 import datetime
 import pandas as pd
 import google.generativeai as genai
+import json
+import os
 
-# --- API設定 (Secretsから取得) ---
-genai.configure(api_key=st.secrets["api_key"])
-model = genai.GenerativeModel('gemini-1.5-flash')
+# --- データの読み込み関数 ---
+def load_data():
+    # data/questions.json ファイルを探して読み込む
+    path = "data/questions.json"
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    else:
+        # ファイルがない場合の予備データ
+        return {"questions": [], "topics": []}
+
+data = load_data()
+QUESTIONS = data["questions"]
+TOPICS = data["topics"]
+
+# --- API設定 (Secrets) ---
+if "api_key" in st.secrets:
+    genai.configure(api_key=st.secrets["api_key"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    st.error("APIキーが設定されていません。StreamlitのSettings > Secretsを確認してください。")
 
 # --- ページ設定 ---
 st.set_page_config(page_title="生成AIパスポート2026攻略", page_icon="🎓")
-
-# --- データの読み込み (JSONファイルがない場合のサンプル) ---
-# 本来は data/questions.json から読み込む処理をここに入れます
-QUESTIONS = [
-    {"id": "Q1", "category": "ガバナンス", "question": "AI新法(2025年6月交付)の目的は？", "choices": ["規制のみ", "推進とリスク対応", "開発禁止", "課税"], "correct": 1, "explanation": "推進とリスク管理の両立が目的です。"},
-    {"id": "Q2", "category": "技術", "question": "RAGの利点は？", "choices": ["高速化", "ハルシネーション抑制", "画像生成", "翻訳"], "correct": 1, "explanation": "外部知識を参照することで、嘘（ハルシネーション）を減らします。"}
-]
 
 # --- セッション状態の初期化 ---
 if 'history' not in st.session_state: st.session_state.history = []
 if 'review_list' not in st.session_state: st.session_state.review_list = set()
 
-# --- サイドバー (ナビゲーション) ---
-st.sidebar.title("メニュー")
-menu = st.sidebar.radio("移動先", ["🏠 ホーム", "✍ 問題演習", "📚 復習リスト", "⏱ 模擬試験", "📊 学習分析"])
+# --- サイドバーナビゲーション ---
+st.sidebar.title("学習メニュー")
+menu = st.sidebar.radio("機能を選択", ["🏠 ホーム", "✍ 問題演習", "📚 復習リスト", "📊 学習分析"])
 
-# --- 🏠 ホーム画面 (サクッと1問 & 毎日トピック) ---
+# --- 🏠 ホーム画面 ---
 if menu == "🏠 ホーム":
-    st.title("🎓 学習コーチ")
+    st.title("🎓 生成AIパスポート対策")
     
-    # 1. カウントダウン
+    # 試験日までのカウントダウン
     days_left = (datetime.date(2026, 6, 15) - datetime.date.today()).days
-    st.metric("6月試験まであと", f"{days_left} 日")
+    st.metric("2026年6月試験まで", f"あと {days_left} 日")
 
-    # 2. 今日の1分トピック (Geminiが生成)
+    # 今日のトピックス (JSONから1つ表示)
     st.subheader("💡 今日の重点トピック")
-    if st.button("AIに最新トピックを教えてもらう"):
-        with st.spinner("生成中..."):
-            res = model.generate_content("生成AIパスポート2026年試験に出そうな最新用語（RAGやAIエージェント、AI新法など）から1つ選んで、1分で読める解説を書いて。")
-            st.info(res.text)
+    if TOPICS:
+        topic = random.choice(TOPICS)
+        st.info(f"**{topic['title']}**\n\n{topic['content']}")
+    
+    # AIへの質問ボタン
+    if st.button("✨ AIに最新トレンドを聞く"):
+        with st.spinner("AIが思考中..."):
+            res = model.generate_content("生成AIパスポート試験（2026年）に向けて、今日覚えておくべき重要キーワードを1つ選んで、3行で解説してください。")
+            st.success(res.text)
 
-    # 3. ささっと1問
-    st.subheader("⚡ ささっと1問")
-    q = random.choice(QUESTIONS)
-    st.write(q['question'])
-    ans = st.radio("答えを選択", q['choices'], key="quick_q")
-    if st.button("回答チェック"):
-        if q['choices'].index(ans) == q['correct']:
-            st.success("正解！ " + q['explanation'])
-        else:
-            st.error("残念... 解説: " + q['explanation'])
-            st.session_state.review_list.add(q['id'])
+    # ささっと1問
+    st.divider()
+    st.subheader("⚡ 1問1答")
+    if QUESTIONS:
+        if 'quick_q' not in st.session_state:
+            st.session_state.quick_q = random.choice(QUESTIONS)
+        
+        q = st.session_state.quick_q
+        st.write(f"**[{q['category']}]** {q['question']}")
+        ans = st.radio("答えを選択", q['choices'], key="radio_quick")
+        
+        if st.button("回答をチェック"):
+            if q['choices'].index(ans) == q['correct']:
+                st.success(f"正解！ 🎉\n\n{q['explanation']}")
+            else:
+                st.error(f"不正解... 😢\n\n正解は「{q['choices'][q['correct']]}」です。\n\n{q['explanation']}")
+                st.session_state.review_list.add(q['id'])
+            # 次の問題ボタンを表示
+            if st.button("次の問題をセット"):
+                del st.session_state.quick_q
+                st.rerun()
 
-# --- ✍ 問題演習 (PRD: カテゴリ別など) ---
+# --- ✍ 問題演習 ---
 elif menu == "✍ 問題演習":
-    st.title("📝 問題演習")
-    category = st.selectbox("カテゴリ選択", ["すべて", "生成AI基礎", "活用技術", "法律・倫理"])
-    # 演習ロジックをここに実装...
-    st.write("カテゴリ別の問題が表示されます（開発中）")
+    st.title("📝 カテゴリ別演習")
+    if QUESTIONS:
+        categories = ["すべて"] + list(set([q['category'] for q in QUESTIONS]))
+        selected_cat = st.selectbox("カテゴリを選択", categories)
+        st.info("ここに選択したカテゴリの問題が順番に表示される機能を実装予定です。")
+    else:
+        st.warning("問題データが見つかりません。data/questions.jsonを確認してください。")
 
-# --- 📚 復習リスト (PRD: 間違えた問題) ---
+# --- 📚 復習リスト ---
 elif menu == "📚 復習リスト":
     st.title("🔍 弱点克服")
     if not st.session_state.review_list:
-        st.write("復習が必要な問題はありません！完璧です。")
+        st.success("現在、復習が必要な問題はありません！この調子です。")
     else:
         for q_id in list(st.session_state.review_list):
-            st.warning(f"問題ID: {q_id} がリストにあります。")
-
-# --- ⏱ 模擬試験 (PRD: 60問/60分) ---
-elif menu == "⏱ 模擬試験":
-    st.title("🏁 模擬試験モード")
-    st.write("本番と同じ60問・60分で挑戦します。")
-    if st.button("試験開始"):
-        st.session_state.start_time = datetime.datetime.now()
-        st.info("タイマー開始しました。")
+            q_data = next((q for q in QUESTIONS if q['id'] == q_id), None)
+            if q_data:
+                with st.expander(f"問題: {q_data['question'][:20]}..."):
+                    st.write(f"**問題:** {q_data['question']}")
+                    st.write(f"**正解:** {q_data['choices'][q_data['correct']]}")
+                    st.write(f"**解説:** {q_data['explanation']}")
+                    if st.button("克服した！", key=f"clear_{q_id}"):
+                        st.session_state.review_list.remove(q_id)
+                        st.rerun()
 
 # --- 📊 学習分析 ---
 elif menu == "📊 学習分析":
     st.title("📈 学習レポート")
-    st.write("これまでの正答率や傾向を分析します。")
+    st.write("日々の正答率や学習時間をグラフ化する準備をしています。")
