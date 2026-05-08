@@ -24,7 +24,7 @@ TOPICS = data["topics"]
 # --- API設定 (Secrets) ---
 if "api_key" in st.secrets:
     genai.configure(api_key=st.secrets["api_key"])
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     st.error("APIキーが設定されていません。StreamlitのSettings > Secretsを確認してください。")
 
@@ -56,8 +56,14 @@ if menu == "🏠 ホーム":
     # AIへの質問ボタン
     if st.button("✨ AIに最新トレンドを聞く"):
         with st.spinner("AIが思考中..."):
-            res = model.generate_content("生成AIパスポート試験（2026年）に向けて、今日覚えておくべき重要キーワードを1つ選んで、3行で解説してください。")
-            st.success(res.text)
+            try:
+                # APIの呼び出しを試みる
+                res = model.generate_content("生成AIパスポート試験（2026年）に向けて、今日覚えておくべき重要キーワードを1つ選んで、3行で解説してください。")
+                st.success(res.text)
+            except Exception as e:
+                # エラーが起きてもアプリを止めず、メッセージだけ出す
+                st.error("現在AIにアクセスできません。APIキーの設定を確認するか、しばらく待ってから再度お試しください。")
+                st.info(f"【エラー詳細】: {e}")
 
     # ささっと1問
     st.divider()
