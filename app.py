@@ -24,7 +24,7 @@ TOPICS = data["topics"]
 # --- API設定 (Secrets) ---
 if "api_key" in st.secrets:
     genai.configure(api_key=st.secrets["api_key"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 else:
     st.error("APIキーが設定されていません。StreamlitのSettings > Secretsを確認してください。")
 
