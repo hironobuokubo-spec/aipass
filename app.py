@@ -59,17 +59,25 @@ with tab_home:
     days_left = (datetime.date(2026, 6, 15) - datetime.date.today()).days
     st.metric("6月試験まで", f"あと {days_left} 日")
 
-    if TOPICS:
-        t = random.choice(TOPICS)
-        st.info(f"**今日のトピック：{t['title']}**\n\n{t['content']}")
-
-    if st.button("✨ AIに最新トレンドを聞く"):
-        with st.spinner("AIが思考中..."):
+    st.subheader("💡 今日のAI生成トピック")
+    
+    # アプリを開いた時（またはリロード時）に1回だけ自動生成する
+    if "daily_topic" not in st.session_state:
+        with st.spinner("AIが今日のトピックを作成中..."):
             try:
-                res = model.generate_content("生成AIパスポート試験向けの重要キーワードを1つ選んで、3行で解説して。")
-                st.success(res.text)
+                prompt = "生成AIパスポート試験（2026年版）に出題されそうな重要キーワードを1つ選び、「【キーワード名】」という見出しのあとに、初心者向けに3行で解説してください。"
+                res = model.generate_content(prompt)
+                st.session_state.daily_topic = res.text
             except Exception as e:
-                st.error("AIが休憩中です。")
+                st.session_state.daily_topic = "現在AIがお休み中です。少し時間を置いて再読み込みしてください。"
+
+    # 生成されたトピックを表示
+    st.info(st.session_state.daily_topic)
+
+    # 別のトピックを読みたい場合の手動更新ボタン
+    if st.button("🔄 別のトピックを生成する"):
+        del st.session_state.daily_topic
+        st.rerun()
 
 # --- ✍ 演習画面 ---
 with tab_quiz:
